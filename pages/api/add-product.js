@@ -1,15 +1,26 @@
 import { supabase } from "../../lib/supabase"
 
-export default async function handler(req,res){
+export default async function handler(req, res) {
 
-const { url } = req.body
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" })
+  }
 
-const { data,error } = await supabase
-.from("products")
-.insert([{ url }])
+  const { url } = req.body
 
-if(error) return res.status(500).json(error)
+  const { data, error } = await supabase
+    .from("products")
+    .insert([
+      {
+        url: url,
+        title: null,
+        current_price: null
+      }
+    ])
 
-res.json(data)
+  if (error) {
+    return res.status(500).json(error)
+  }
 
+  res.json({ message: "Product added", data })
 }
