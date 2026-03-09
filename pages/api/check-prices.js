@@ -1,30 +1,53 @@
 import { supabase } from "../../lib/supabase"
 import { getAmazonPrice } from "../../lib/scraper"
 
-export default async function handler(req,res){
+export default async function handler(req, res) {
+  try {
 
-const { data:products } = await supabase
-.from("products")
-.select("*")
+    const { data: products, error } = await supabase
+      .from("products")
+      .select("*")
 
-for(const product of products){
+    if (error) {
+      console.error("Supabase fetch error:", error)
+      return res.status(500).json({ error })
+    }
 
-const result = await getAmazonPrice(product.url)
+    for (const product of products) {
 
-await supabase
-.from("products")
-.update({current_price:result.price})
-.eq("id",product.id)
+      try {
 
-await supabase
-.from("price_history")
-.insert([{
-product_id:product.id,
-price:result.price
-}])
+        const result = await getAmazonPrice(product.url)
 
-}
+        await supabase
+          .from("products")
+          .update({
+            current_price: result.price,
+            title: result.title
+          })
+          .eq("id", product.id)
 
-res.json({status:"done"})
+        await supabase
+          .from("price_history")
+          .insert([
+            {
+              product_id: product.id,
+              price: result.price
+            }
+          ])
 
+      } catch (scrapeError) {
+        console.error("Scraping failed:", scrapeError)
+      }
+
+    }
+
+    res.json({ status: "done", products_checked: products.length })
+
+  } catch (err) {
+
+    console.error("Server error:", err)
+    res.status(500).json({ error: err.message })
+
+  }
 }
