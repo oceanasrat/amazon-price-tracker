@@ -6,13 +6,20 @@ const [url,setUrl] = useState("")
 
 async function submit(){
 
-await fetch("/api/add-product",{
+const res = await fetch("/api/add-product",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({url})
 })
+
+const data = await res.json()
+
+if(!res.ok){
+alert("Error: "+data.error)
+return
+}
 
 alert("Product added")
 
